@@ -56,6 +56,8 @@ def login():
 
 # ---------------- CRUD Endpoints ----------------
 
+# ---------------- CRUD Endpoints ----------------
+
 # Get all patients
 @app.route('/patients', methods=['GET'])
 @token_required
@@ -76,7 +78,7 @@ def get_patient_by_id(id):
     format_type = request.args.get('format', 'json')
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM patients WHERE id=%s", (id,))
+    cursor.execute("SELECT * FROM patients WHERE patient_id=%s", (id,))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -92,7 +94,8 @@ def search_patients_by_name():
     format_type = request.args.get('format', 'json')
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM patients WHERE name LIKE %s", (f"%{query}%",))
+    # Search in first_name or last_name
+    cursor.execute("SELECT * FROM patients WHERE first_name LIKE %s OR last_name LIKE %s", (f"%{query}%", f"%{query}%"))
     results = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -103,14 +106,27 @@ def search_patients_by_name():
 @token_required
 def create_new_patient():
     data = request.json
-    name = data.get('name')
-    age = data.get('age')
-    if not name or not age:
-        return jsonify({'error': 'Missing name or age'}), 400
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    phone = data.get('phone')
+    
+    # Optional fields
+    date_of_birth = data.get('date_of_birth')
+    gender = data.get('gender')
+    email = data.get('email')
+    address = data.get('address')
+    
+    if not first_name or not last_name or not phone:
+        return jsonify({'error': 'Missing required fields: first_name, last_name, phone'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO patients (name, age) VALUES (%s, %s)", (name, age))
+    sql = """INSERT INTO patients 
+             (first_name, last_name, phone, date_of_birth, gender, email, address) 
+             VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+    val = (first_name, last_name, phone, date_of_birth, gender, email, address)
+    
+    cursor.execute(sql, val)
     conn.commit()
     cursor.close()
     conn.close()
@@ -121,14 +137,27 @@ def create_new_patient():
 @token_required
 def update_patient_record(id):
     data = request.json
-    name = data.get('name')
-    age = data.get('age')
-    if not name or not age:
-        return jsonify({'error': 'Missing name or age'}), 400
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    phone = data.get('phone')
+    
+    # Optional fields
+    date_of_birth = data.get('date_of_birth')
+    gender = data.get('gender')
+    email = data.get('email')
+    address = data.get('address')
+
+    if not first_name or not last_name or not phone:
+        return jsonify({'error': 'Missing required fields: first_name, last_name, phone'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE patients SET name=%s, age=%s WHERE id=%s", (name, age, id))
+    sql = """UPDATE patients 
+             SET first_name=%s, last_name=%s, phone=%s, date_of_birth=%s, gender=%s, email=%s, address=%s 
+             WHERE patient_id=%s"""
+    val = (first_name, last_name, phone, date_of_birth, gender, email, address, id)
+    
+    cursor.execute(sql, val)
     conn.commit()
     cursor.close()
     conn.close()
@@ -140,7 +169,7 @@ def update_patient_record(id):
 def delete_patient_record(id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM patients WHERE id=%s", (id,))
+    cursor.execute("DELETE FROM patients WHERE patient_id=%s", (id,))
     conn.commit()
     cursor.close()
     conn.close()

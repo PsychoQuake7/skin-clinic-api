@@ -24,11 +24,19 @@ class APITestCase(unittest.TestCase):
         self.assertIn('application/xml', response.content_type)
 
     def test_create_patient_missing_data(self):
-        response = self.client.post('/patients', json={}, headers={'x-access-token': self.token})
+        # Missing required field 'phone'
+        response = self.client.post('/patients', json={'first_name':'Test', 'last_name':'User'}, headers={'x-access-token': self.token})
         self.assertEqual(response.status_code, 400)
 
     def test_create_patient_success(self):
-        response = self.client.post('/patients', json={'name':'Test','age':30}, headers={'x-access-token': self.token})
+        payload = {
+            'first_name': 'Test',
+            'last_name': 'Patient',
+            'phone': '1234567890',
+            'gender': 'Male',
+            'date_of_birth': '1990-01-01'
+        }
+        response = self.client.post('/patients', json=payload, headers={'x-access-token': self.token})
         self.assertEqual(response.status_code, 201)
 
     def test_unauthorized_access(self):
